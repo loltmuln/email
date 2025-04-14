@@ -35,7 +35,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         Хэрэглэгчийн нэр нь зөвхөн латин үсэг болон тоо агуулж байх ёстой.
                     </p>
                     <div style="text-align:center; margin-top:20px;">
-                      <a href="login.html?signup" style="color:#1a75ff; text-decoration:none;">Бүртгүүлэхээр дахин оролдоно</a>
+                      <a href="index.php?signup" style="color:#1a75ff; text-decoration:none;">Бүртгүүлэхээр дахин оролдоно</a>
                     </div>
                 </div>
             </div>
@@ -69,7 +69,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         Хэрэглэгчийн нэрийг аль хэдийн авсан. Өөрийг сонгоно уу..
                     </p>
                     <div style="text-align:center; margin-top:20px;">
-                      <a href="login.html?signup" style="color:#1a75ff; text-decoration:none;">Бүртгүүлэхээр дахин оролдоно</a>
+                      <a href="index.php?signup" style="color:#1a75ff; text-decoration:none;">Бүртгүүлэхээр дахин оролдоно</a>
                     </div>
                 </div>
             </div>
@@ -96,7 +96,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
                     <div class="form-container">
                         <p style="text-align:center; font-size:18px; margin-top:30px;">
-                            Амжилттай бүртгүүллээ. Одоо <a href="login.html" style="color:#1a75ff; text-decoration:none;">Login хийх</a> боломжтой.
+                            Амжилттай бүртгүүллээ. Одоо <a href="index.php" style="color:#1a75ff; text-decoration:none;">Login хийх</a> боломжтой.
                         </p>
                     </div>
                 </div>
