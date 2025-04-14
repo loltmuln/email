@@ -1,0 +1,13 @@
+hot = {
+    "Mongolia": "Ulaanbaatar",
+    "China": "Beijing",
+    "Russia": "Moscow",
+    "USA": "Washington, D.C.",
+    "India": "New Delhi",
+    "Japan": "Tokyo",
+    }
+hot.update({"LAM": "LAMAA"})
+hot.pop("USA")
+for value, key in hot.items():
+    print(f"{value}:{key}")
+

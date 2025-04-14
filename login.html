@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Login / Signup</title>
+  <link rel="stylesheet" type="text/css" href="../loginapp/assets/css/style.css">
+<script src="../loginapp/assets/js/script.js" defer></script>
+
+</head>
+<body>
+  <div class="wrapper">
+    <div class="title-text">
+      <div class="title login">Login Form</div>
+      <div class="title signup">Signup Form</div>
+    </div>
+    <div class="form-container">
+      <div class="slide-controls">
+        <input type="radio" name="slide" id="login" checked>
+        <input type="radio" name="slide" id="signup">
+        <label for="login" class="slide login">Login</label>
+        <label for="signup" class="slide signup">Signup</label>
+        <div class="slider-tab"></div>
+      </div>
+      <div class="form-inner">
+        <!-- Login Form -->
+        <form action="login.php" method="POST" class="login">
+          <div class="field">
+            <input type="text" placeholder="Username" name="username" required>
+          </div>
+          <div class="field">
+            <input type="password" placeholder="Password" name="password" required>
+          </div>
+          <div class="pass-link"><a href="#">Forgot password?</a></div>
+          <div class="field btn">
+            <div class="btn-layer"></div>
+            <input type="submit" value="Login">
+          </div>
+          <div class="signup-link"><a href="#">Signup</a></div>
+        </form>
+        <!-- Signup Form -->
+        <form action="signup.php" method="POST" class="signup">
+          <div class="field">
+            <input type="text" placeholder="Username" name="username" required>
+          </div>
+          <div class="field">
+            <input type="password" placeholder="Password" name="password" required>
+          </div>
+          <div class="field">
+            <input type="password" placeholder="Confirm Password" name="confirm_password" required>
+          </div>
+          <div class="field btn">
+            <div class="btn-layer"></div>
+            <input type="submit" value="Signup">
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
