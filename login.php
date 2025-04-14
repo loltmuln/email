@@ -44,7 +44,7 @@ if ($result->num_rows === 1) {
         <head>
           <meta charset="UTF-8">
           <title>Login Success</title>
-          <link rel="stylesheet" type="text/css" href="../loginapp/assets/css/style.css">
+          <link rel="stylesheet" type="text/css" href="assets/css/style.css">
         </head>
         <body>
           <div class="wrapper">
@@ -69,7 +69,7 @@ if ($result->num_rows === 1) {
       <head>
           <meta charset="UTF-8">
           <title>Signup Success</title>
-          <link rel="stylesheet" type="text/css" href="../loginapp/assets/css/style.css">
+          <link rel="stylesheet" type="text/css" href="assets/css/style.css">
       </head>
       <body>
           <div class="wrapper">
@@ -91,7 +91,7 @@ if ($result->num_rows === 1) {
   <head>
       <meta charset="UTF-8">
       <title>Signup Success</title>
-      <link rel="stylesheet" type="text/css" href="../loginapp/assets/css/style.css">
+      <link rel="stylesheet" type="text/css" href="assets/css/style.css">
   </head>
   <body>
       <div class="wrapper">
