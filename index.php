@@ -3,9 +3,9 @@ session_start();
 // If form is submitted, process the login
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Database connection settings
-    $servername = "localhost";
-    $dbusername = "root";
-    $dbpassword = "";
+    $servername = "lab123-server.mysql.database.azure.com";
+    $dbusername = "xyftmqlidm@lab123-server";
+    $dbpassword = "2$45dSSmsURJr7W5";
     $dbname = "login_db";
 
     // Create connection

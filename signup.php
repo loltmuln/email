@@ -1,8 +1,8 @@
 <?php
 // Database connection
-$servername = "localhost";
-$dbusername = "root";
-$dbpassword = "";
+$servername = "lab123-server.mysql.database.azure.com";
+$dbusername = "xyftmqlidm@lab123-server";
+$dbpassword = "2$45dSSmsURJr7W5";
 $dbname = "login_db";
 
 $conn = new mysqli($servername, $dbusername, $dbpassword, $dbname);
