@@ -1,15 +1,5 @@
 <?php
-// Database connection
-$servername = "lab123-server.mysql.database.azure.com";
-$dbusername = "xyftmqlidm@lab123-server";
-$dbpassword = "2$45dSSmsURJr7W5";
-$dbname = "login_db";
-
-$conn = new mysqli($servername, $dbusername, $dbpassword, $dbname);
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
-
+include('db_config.php'); 
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Get username and password from the form

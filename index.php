@@ -1,18 +1,9 @@
 <?php
 session_start();
-// If form is submitted, process the login
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Database connection settings
-    $servername = "lab123-server.mysql.database.azure.com";
-    $dbusername = "xyftmqlidm@lab123-server";
-    $dbpassword = "2$45dSSmsURJr7W5";
-    $dbname = "login_db";
+include('db_config.php'); 
 
-    // Create connection
-    $conn = new mysqli($servername, $dbusername, $dbpassword, $dbname);
-    if ($conn->connect_error) {
-        die("Connection failed: " . $conn->connect_error);
-    }
+// If form is submitted
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Get username and password from POST data
     $username = trim($_POST['username']);
@@ -23,8 +14,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       echo "Invalid username.";
       exit;
     }
+
     if (empty($username) || empty($password)) {
-      die("Username болон Passowrd хоосон байж болохгүй.");
+      die("Username болон Password хоосон байж болохгүй.");
     }
 
     // Prepare SQL and check if the user exists
