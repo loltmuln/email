@@ -1,27 +1,45 @@
 <?php
+require_once "includes/db_config.php";
 session_start();
-include __DIR__ . '/includes/db_config.php';
-// LOGIN handling
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $u = trim($_POST['username']);
-  $p = trim($_POST['password']);
-  // Validate
-  if (!preg_match('/^[a-zA-Z0-9]+$/', $u) || !$p) {
-    $error = "Invalid credentials.";
-  } else {
-    $stmt = $conn->prepare("SELECT password FROM users WHERE username=?");
-    $stmt->bind_param('s', $u);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    if ($res->num_rows === 1 && password_verify($p, $res->fetch_assoc()['password'])) {
-      $_SESSION['username'] = $u;
-      header('Location: home.php'); // or show success template
-      exit;
+
+$signup_error = "";
+$signup_success = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $username     = trim($_POST['username']);
+    $password     = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    $email        = trim($_POST['email']);
+    $phone        = trim($_POST['phone']);
+    $country_code = trim($_POST['country_code']);
+    $address      = trim($_POST['address']);
+
+    if ($username && $password && $email && $phone && $country_code && $address) {
+        // Check if username already exists
+        $check_stmt = $conn->prepare("SELECT username FROM users WHERE username = ?");
+        $check_stmt->bind_param("s", $username);
+        $check_stmt->execute();
+        $result = $check_stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            $signup_error = "Username already exists. Please choose another one.";
+        } else {
+            $stmt = $conn->prepare("INSERT INTO users (username, password, email, phone, country_code, address) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssssss", $username, $password, $email, $phone, $country_code, $address);
+
+            if ($stmt->execute()) {
+                $signup_success = "Account created successfully! You can now login.";
+                // Redirect to login after 2 seconds
+                header("refresh:2;url=index.php");
+            } else {
+                $signup_error = "Error: " . $stmt->error;
+            }
+            $stmt->close();
+        }
+        $check_stmt->close();
+    } else {
+        $signup_error = "Please fill in all required fields.";
     }
-    $error = "Username or password incorrect.";
-  }
 }
-// HTML + error or form
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -97,7 +115,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       border-left: 4px solid var(--error-color);
     }
     
-    .error-icon {
+    .success-message {
+      background-color: rgba(209, 250, 229, 0.9);
+      color: var(--success-color);
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      font-size: 14px;
+      border-left: 4px solid var(--success-color);
+    }
+    
+    .error-icon, .success-icon {
       margin-right: 10px;
       flex-shrink: 0;
     }
@@ -140,10 +170,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     .auth-form {
-      display: none;
-    }
-    
-    .auth-form.active {
       display: block;
     }
     
@@ -214,24 +240,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       font-size: 14px;
     }
     
-    .remember-me {
-      display: flex;
-      align-items: center;
+    .login-link {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
     }
     
-    .remember-me input {
-      margin-right: 8px;
-      accent-color: var(--primary-color);
-    }
-    
-    .forgot-link {
+    .login-link a {
       color: var(--primary-color);
       text-decoration: none;
       font-weight: 500;
       transition: color 0.3s;
     }
     
-    .forgot-link:hover {
+    .login-link a:hover {
       color: var(--primary-hover);
       text-decoration: underline;
     }
@@ -271,207 +293,101 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       height: 4px;
       background: linear-gradient(to right, var(--primary-color), #8b5cf6);
     }
-    
-    /* Custom checkbox styling */
-    .remember-me input[type="checkbox"] {
-      appearance: none;
-      -webkit-appearance: none;
-      width: 18px;
-      height: 18px;
-      border: 2px solid var(--border-color);
-      border-radius: 4px;
-      margin-right: 8px;
-      position: relative;
-      cursor: pointer;
-    }
-    
-    .remember-me input[type="checkbox"]:checked {
-      background-color: var(--primary-color);
-      border-color: var(--primary-color);
-    }
-    
-    .remember-me input[type="checkbox"]:checked::after {
-      content: '';
-      position: absolute;
-      top: 2px;
-      left: 5px;
-      width: 5px;
-      height: 10px;
-      border: solid white;
-      border-width: 0 2px 2px 0;
-      transform: rotate(45deg);
-    }
-    
-    /* Tab switching */
-    .login-form,
-    .signup-form {
-      transition: opacity 0.3s ease-in-out;
-    }
-    
-    /* Terms and conditions */
-    .terms-check {
-      display: flex;
-      align-items: flex-start;
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-    
-    .terms-check input {
-      margin-right: 8px;
-      margin-top: 3px;
-    }
-    
-    .terms-check a {
-      color: var(--primary-color);
-      text-decoration: none;
-    }
-    
-    .terms-check a:hover {
-      text-decoration: underline;
-    }
   </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Toggle password visibility
+      const togglePassword = document.querySelector('.toggle-password');
+      const passwordField = document.querySelector('#password');
+      
+      if (togglePassword && passwordField) {
+        togglePassword.addEventListener('click', function() {
+          const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+          passwordField.setAttribute('type', type);
+          
+          // Change the icon based on password visibility
+          const eyeIcon = this.querySelector('.eye-icon');
+          if (type === 'password') {
+            eyeIcon.innerHTML = '<path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>';
+          } else {
+            eyeIcon.innerHTML = '<path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/><path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829l.822.822zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/><path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12-.708.708z"/>';
+          }
+        });
+      }
+    });
+  </script>
 </head>
 <body>
   <div class="container">
     <div class="auth-wrapper">
-      <h1 class="auth-title">Welcome Back</h1>
+      <h1 class="auth-title">Create Account</h1>
       
-      <?php if (!empty($error)): ?>
+      <?php if (!empty($signup_error)): ?>
         <div class="error-message" role="alert">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="error-icon">
             <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
             <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
           </svg>
-          <?= htmlspecialchars($error) ?>
+          <?= htmlspecialchars($signup_error) ?>
         </div>
       <?php endif ?>
       
-      <div class="tabs">
-        <button type="button" class="tab-btn active" data-target="login">Login</button>
-        <button type="button" class="tab-btn" data-target="signup">Sign Up</button>
-      </div>
+      <?php if (!empty($signup_success)): ?>
+        <div class="success-message" role="alert">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="success-icon">
+            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+            <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
+          </svg>
+          <?= htmlspecialchars($signup_success) ?>
+        </div>
+      <?php endif ?>
       
-      <div class="forms-container">
-        <!-- Login form -->
-        <form method="POST" class="auth-form login-form active" id="login-form">
-          <div class="form-group">
-            <label for="username">Username</label>
-            <input id="username" name="username" placeholder="Enter your username" required autocomplete="username">
-          </div>
-          
-          <div class="form-group">
-            <label for="password">Password</label>
-            <div class="password-input-group">
-              <input id="password" name="password" type="password" placeholder="Enter your password" required autocomplete="current-password">
-              <button type="button" class="toggle-password" aria-label="Show password">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="eye-icon">
-                  <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
-                  <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <div class="form-footer">
-            <div class="remember-me">
-              <input type="checkbox" id="remember" name="remember">
-              <label for="remember">Remember me</label>
-            </div>
-            <a href="forgot-password.php" class="forgot-link">Forgot password?</a>
-          </div>
-          
-          <button type="submit" class="auth-button">Login</button>
-        </form>
+      <form method="POST" class="auth-form" id="signup-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input id="username" name="username" placeholder="Choose a username" required autocomplete="username">
+        </div>
         
-        <!-- Signup form -->
-        <form action="signup.php" method="POST" class="auth-form signup-form" id="signup-form">
-          <div class="form-group">
-            <label for="new-username">Username</label>
-            <input id="new-username" name="username" placeholder="Choose a username" required autocomplete="username">
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="password-input-group">
+            <input id="password" name="password" type="password" placeholder="Create a password" required autocomplete="new-password">
+            <button type="button" class="toggle-password" aria-label="Show password">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="eye-icon">
+                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+              </svg>
+            </button>
           </div>
-          
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input id="email" name="email" type="email" placeholder="Enter your email" required autocomplete="email">
-          </div>
-          
-          <div class="form-group">
-            <label for="new-password">Password</label>
-            <div class="password-input-group">
-              <input id="new-password" name="password" type="password" placeholder="Create a password" required autocomplete="new-password">
-              <button type="button" class="toggle-password" aria-label="Show password">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="eye-icon">
-                  <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
-                  <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="confirm-password">Confirm Password</label>
-            <div class="password-input-group">
-              <input id="confirm-password" name="confirm_password" type="password" placeholder="Confirm your password" required autocomplete="new-password">
-              <button type="button" class="toggle-password" aria-label="Show password">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="eye-icon">
-                  <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
-                  <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <div class="terms-check">
-            <input type="checkbox" id="terms" name="terms" required>
-            <label for="terms">I agree to the <a href="terms.php">Terms of Service</a> and <a href="privacy.php">Privacy Policy</a></label>
-          </div>
-          
-          <button type="submit" class="auth-button">Create Account</button>
-        </form>
-      </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" placeholder="Your email address" required autocomplete="email">
+        </div>
+        
+        <div class="form-group">
+          <label for="phone">Phone Number</label>
+          <input id="phone" name="phone" placeholder="Your phone number" required autocomplete="tel">
+        </div>
+        
+        <div class="form-group">
+          <label for="country_code">Country Code</label>
+          <input id="country_code" name="country_code" placeholder="e.g. +1, +44, +91" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="address">Address</label>
+          <input id="address" name="address" placeholder="Your address" required autocomplete="street-address">
+        </div>
+        
+        <button type="submit" class="auth-button">Create Account</button>
+        
+        <div class="login-link">
+          Already have an account? <a href="index.php">Login</a>
+        </div>
+      </form>
     </div>
   </div>
-  
-  <script>
-    // Tab switching functionality
-    document.addEventListener('DOMContentLoaded', function() {
-      const tabButtons = document.querySelectorAll('.tab-btn');
-      const authForms = document.querySelectorAll('.auth-form');
-      const authTitle = document.querySelector('.auth-title');
-      
-      tabButtons.forEach(button => {
-        button.addEventListener('click', function() {
-          // Update active tab
-          tabButtons.forEach(btn => btn.classList.remove('active'));
-          this.classList.add('active');
-          
-          // Show the corresponding form
-          const target = this.getAttribute('data-target');
-          authForms.forEach(form => {
-            form.classList.remove('active');
-            if (form.id === target + '-form') {
-              form.classList.add('active');
-            }
-          });
-          
-          // Update title
-          authTitle.textContent = target === 'login' ? 'Welcome Back' : 'Create Account';
-        });
-      });
-      
-      // Password visibility toggle
-      const toggleButtons = document.querySelectorAll('.toggle-password');
-      toggleButtons.forEach(button => {
-        button.addEventListener('click', function() {
-          const input = this.previousElementSibling;
-          const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
-          input.setAttribute('type', type);
-          
-          // Update icon (optional)
-          // You could add code here to change the eye icon
-        });
-      });
-    });
-  </script>
 </body>
 </html>
