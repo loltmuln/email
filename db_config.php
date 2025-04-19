@@ -1,30 +1,38 @@
 <?php
-$servername = "lab123-server.mysql.database.azure.com";
-$dbusername = "xyftmqlidm@lab123-server";
-$dbpassword = "2$45dSSmsURJr7W5";
-$dbname = "login_db";
+// -----------------------------------------------------------------
+// Centralized DB setup: connect → create DB if needed → select it → create table if needed
+// -----------------------------------------------------------------
 
-// Create connection
-$conn = new mysqli($servername, $dbusername, $dbpassword, $dbname);
+$host     = "lab123-server.mysql.database.azure.com";
+$user     = "xyftmqlidm@lab123-server";
+$pass     = "2\$45dSSmsURJr7W5";
+$dbname   = "login_db";
+
+// 1) Connect *without* specifying a database
+$conn = new mysqli($host, $user, $pass);
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Check if the database exists and create it if not
-$sql = "CREATE DATABASE IF NOT EXISTS $dbname";
-if (!$conn->query($sql)) {
-    echo "Error creating database: " . $conn->error;
-    exit;
+// 2) Create the database if it doesn't exist
+if (! $conn->query("CREATE DATABASE IF NOT EXISTS `$dbname`")) {
+    die("Error creating database: " . $conn->error);
 }
 
-// Check if the users table exists and create it if not
-$sql = "CREATE TABLE IF NOT EXISTS users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL
-)";
-if (!$conn->query($sql)) {
-    echo "Error creating table: " . $conn->error;
-    exit;
+// 3) Select the database
+if (! $conn->select_db($dbname)) {
+    die("Error selecting database: " . $conn->error);
 }
-?>
+
+// 4) Create the users table if it doesn't exist
+$createUsers = <<<SQL
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+SQL;
+
+if (! $conn->query($createUsers)) {
+    die("Error creating users table: " . $conn->error);
+}

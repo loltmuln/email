@@ -1,178 +1,70 @@
 <?php
 session_start();
-include('db_config.php'); 
+include 'db_config.php';
 
-// If form is submitted
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
-    // Get username and password from POST data
+// Handle Login POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['password'])) {
     $username = trim($_POST['username']);
     $password = trim($_POST['password']);
 
-    // Validate username format
-    if (!preg_match("/^[a-zA-Z0-9]*$/", $username)) {
-      echo "Invalid username.";
-      exit;
+    // Basic validation
+    if ($username === '' || $password === '' ||
+        !preg_match('/^[a-zA-Z0-9]+$/', $username)) {
+        die("Invalid input.");
     }
 
-    if (empty($username) || empty($password)) {
-      die("Username болон Password хоосон байж болохгүй.");
-    }
-
-    // Prepare SQL and check if the user exists
-    $sql = "SELECT * FROM users WHERE username = ?";
-    $stmt = $conn->prepare($sql);
+    // Lookup user
+    $stmt = $conn->prepare("SELECT password FROM users WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
-    $result = $stmt->get_result();
-
-    // If user exists, verify the password
-    if ($result->num_rows === 1) {
-        $row = $result->fetch_assoc();
-        if (password_verify($password, $row['password'])) {
-            // Successful login: set session variables
-            $_SESSION['username'] = $row['username'];
-            $_SESSION['loggedin'] = true;
-            ?>
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="UTF-8">
-              <title>Login Success</title>
-              <link rel="stylesheet" type="text/css" href="assets/css/style.css">
-            </head>
-            <body>
-              <div class="wrapper">
-                <div class="title-text">
-                  <div class="title login">Login Success</div>
-                </div>
-                <div class="form-container">
-                  <p style="text-align:center; font-size:18px; margin-top:30px;">
-                    Амжилттай login хийлээ, <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>!
-                  </p>
-                  <div style="text-align:center; margin-top:20px;">
-                    <a href="logout.php" style="color:#1a75ff; text-decoration:none;">Logout</a>
-                  </div>
-                </div>
-              </div>
-            </body>
-            </html>
-            <?php
-            exit;
-        } else {
-            // Wrong password: show error page with link back to login/signup interface
-            ?>
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="UTF-8">
-              <title>Login Failed</title>
-              <link rel="stylesheet" type="text/css" href="assets/css/style.css">
-            </head>
-            <body>
-              <div class="wrapper">
-                <div class="title-text">
-                  <div class="title signup">Password буруу</div>
-                </div>
-                <div class="form-container">
-                  <p style="text-align:center; font-size:18px; margin-top:30px;">
-                    Password буруу байна <a href="index.php" style="color:#1a75ff; text-decoration:none;">дахин оролдох</a>.
-                  </p>
-                </div>
-              </div>
-            </body>
-            </html>
-            <?php
-            exit;
-        }
+    $stmt->bind_result($hash);
+    if ($stmt->fetch() && password_verify($password, $hash)) {
+        $_SESSION['username'] = $username;
+        $_SESSION['loggedin'] = true;
+        header("Location: index.php?success=1");
+        exit;
     } else {
-        // Username not found: show error page with link to signup
-        ?>
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Login Failed</title>
-          <link rel="stylesheet" type="text/css" href="assets/css/style.css">
-        </head>
-        <body>
-          <div class="wrapper">
-            <div class="title-text">
-              <div class="title signup">Бүртгэлгүй Username байна</div>
-            </div>
-            <div class="form-container">
-              <p style="text-align:center; font-size:18px; margin-top:30px;">
-                Бүртгэлгүй Username байна <a href="index.php?signup" style="color:#1a75ff; text-decoration:none;">Бүртгүүлэх</a>.
-              </p>
-            </div>
-          </div>
-        </body>
-        </html>
-        <?php
+        header("Location: index.php?error=login");
         exit;
     }
-    $stmt->close();
-    $conn->close();
 }
+
+// If not POST (or after redirect), show the form & any messages:
+$error   = $_GET['error']   ?? '';
+$success = $_GET['success'] ?? '';
 ?>
-<!-- If not a POST request, display the login/signup form -->
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <title>Login / Signup</title>
-  <link rel="stylesheet" type="text/css" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/style.css">
   <script src="assets/js/script.js" defer></script>
 </head>
 <body>
+  <?php if ($success): ?>
+    <p class="msg success">✅ Login successful! Welcome, <?=htmlspecialchars($_SESSION['username'])?></p>
+  <?php elseif ($error === 'login'): ?>
+    <p class="msg error">❌ Invalid username or password.</p>
+  <?php endif; ?>
+
   <div class="wrapper">
-    <div class="title-text">
-      <div class="title login">Login Form</div>
-      <div class="title signup">Signup Form</div>
-    </div>
-    <div class="form-container">
-      <div class="slide-controls">
-        <input type="radio" name="slide" id="login" checked>
-        <input type="radio" name="slide" id="signup">
-        <label for="login" class="slide login">Login</label>
-        <label for="signup" class="slide signup">Signup</label>
-        <div class="slider-tab"></div>
-      </div>
-      <div class="form-inner">
-        <!-- Login Form -->
-        <form action="index.php" method="POST" class="login">
-          <div class="field">
-            <input type="text" placeholder="Username" name="username" required>
-          </div>
-          <div class="field">
-            <input type="password" placeholder="Password" name="password" required>
-          </div>
-          <div class="pass-link"><a href="#">Forgot password?</a></div>
-          <div class="field btn">
-            <div class="btn-layer"></div>
-            <input type="submit" value="Login">
-          </div>
-          <div class="signup-link"><a href="#">Signup</a></div>
-        </form>
-        <!-- Signup Form -->
-        <form action="signup.php" method="POST" class="signup">
-          <div class="field">
-            <input type="text" placeholder="Username" name="username" required>
-          </div>
-          <div class="field">
-            <input type="password" placeholder="Password" name="password" required>
-          </div>
-          <div class="field">
-            <input type="password" placeholder="Confirm Password" name="confirm_password" required>
-          </div>
-          <div class="field btn">
-            <div class="btn-layer"></div>
-            <input type="submit" value="Signup">
-          </div>
-        </form>
-      </div>
+    <!-- slide-controls, etc. -->
+    <div class="form-inner">
+      <!-- Login Form -->
+      <form action="index.php" method="POST" class="login">
+        <input type="text"  name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+      </form>
+      <!-- Signup Form -->
+      <form action="signup.php" method="POST" class="signup">
+        <input type="text"  name="username"         placeholder="Username"        required>
+        <input type="password" name="password"        placeholder="Password"        required>
+        <input type="password" name="confirm_password" placeholder="Confirm Password" required>
+        <button type="submit">Signup</button>
+      </form>
     </div>
   </div>
-  <script src="assets/js/script.js"></script>
 </body>
 </html>
