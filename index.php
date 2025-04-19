@@ -7,7 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $u = trim($_POST['username']);
   $p = trim($_POST['password']);
 
-  // Validate
+  // Validate 
   if (!preg_match('/^[a-zA-Z0-9]+$/', $u) || !$p) {
     $error = "Invalid credentials.";
   } else {
