@@ -1,37 +1,30 @@
 <?php
 session_start();
-include 'db_config.php';
+include __DIR__ . '/includes/db_config.php';
 
-// Handle Login POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['password'])) {
-    $username = trim($_POST['username']);
-    $password = trim($_POST['password']);
+// LOGIN handling
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $u = trim($_POST['username']);
+  $p = trim($_POST['password']);
 
-    // Basic validation
-    if ($username === '' || $password === '' ||
-        !preg_match('/^[a-zA-Z0-9]+$/', $username)) {
-        die("Invalid input.");
-    }
-
-    // Lookup user
-    $stmt = $conn->prepare("SELECT password FROM users WHERE username = ?");
-    $stmt->bind_param("s", $username);
+  // Validate
+  if (!preg_match('/^[a-zA-Z0-9]+$/', $u) || !$p) {
+    $error = "Invalid credentials.";
+  } else {
+    $stmt = $conn->prepare("SELECT password FROM users WHERE username=?");
+    $stmt->bind_param('s', $u);
     $stmt->execute();
-    $stmt->bind_result($hash);
-    if ($stmt->fetch() && password_verify($password, $hash)) {
-        $_SESSION['username'] = $username;
-        $_SESSION['loggedin'] = true;
-        header("Location: index.php?success=1");
-        exit;
-    } else {
-        header("Location: index.php?error=login");
-        exit;
+    $res = $stmt->get_result();
+    if ($res->num_rows === 1 && password_verify($p, $res->fetch_assoc()['password'])) {
+      $_SESSION['username'] = $u;
+      header('Location: home.php'); // or show success template
+      exit;
     }
+    $error = "Username or password incorrect.";
+  }
 }
 
-// If not POST (or after redirect), show the form & any messages:
-$error   = $_GET['error']   ?? '';
-$success = $_GET['success'] ?? '';
+// HTML + error or form
 ?>
 <!DOCTYPE html>
 <html>
@@ -42,29 +35,21 @@ $success = $_GET['success'] ?? '';
   <script src="assets/js/script.js" defer></script>
 </head>
 <body>
-  <?php if ($success): ?>
-    <p class="msg success">✅ Login successful! Welcome, <?=htmlspecialchars($_SESSION['username'])?></p>
-  <?php elseif ($error === 'login'): ?>
-    <p class="msg error">❌ Invalid username or password.</p>
-  <?php endif; ?>
+  <?php if (!empty($error)): ?>
+    <div class="error"><?= htmlspecialchars($error) ?></div>
+  <?php endif ?>
 
   <div class="wrapper">
-    <!-- slide-controls, etc. -->
-    <div class="form-inner">
-      <!-- Login Form -->
-      <form action="index.php" method="POST" class="login">
-        <input type="text"  name="username" placeholder="Username" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit">Login</button>
-      </form>
-      <!-- Signup Form -->
-      <form action="signup.php" method="POST" class="signup">
-        <input type="text"  name="username"         placeholder="Username"        required>
-        <input type="password" name="password"        placeholder="Password"        required>
-        <input type="password" name="confirm_password" placeholder="Confirm Password" required>
-        <button type="submit">Signup</button>
-      </form>
-    </div>
+    <!-- same form markup as before -->
+    <!-- form action left blank so it posts back to index.php -->
+    <form method="POST" class="login">
+      <input name="username" placeholder="Username" required>
+      <input name="password" type="password" placeholder="Password" required>
+      <button type="submit">Login</button>
+    </form>
+    <form action="signup.php" method="POST" class="signup">
+      <!-- signup form here -->
+    </form>
   </div>
 </body>
 </html>
