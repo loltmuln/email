@@ -273,8 +273,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     /* Custom checkbox styling */
-    .remember-me input[type="checkbox"],
-    .terms-container input[type="checkbox"] {
+    .remember-me input[type="checkbox"] {
       appearance: none;
       -webkit-appearance: none;
       width: 18px;
@@ -286,14 +285,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       cursor: pointer;
     }
     
-    .remember-me input[type="checkbox"]:checked,
-    .terms-container input[type="checkbox"]:checked {
+    .remember-me input[type="checkbox"]:checked {
       background-color: var(--primary-color);
       border-color: var(--primary-color);
     }
     
-    .remember-me input[type="checkbox"]:checked::after,
-    .terms-container input[type="checkbox"]:checked::after {
+    .remember-me input[type="checkbox"]:checked::after {
       content: '';
       position: absolute;
       top: 2px;
@@ -304,75 +301,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       border-width: 0 2px 2px 0;
       transform: rotate(45deg);
     }
-
-    /* Added for signup form */
-    .terms-container {
+    
+    /* Tab switching */
+    .login-form,
+    .signup-form {
+      transition: opacity 0.3s ease-in-out;
+    }
+    
+    /* Terms and conditions */
+    .terms-check {
       display: flex;
       align-items: flex-start;
       margin-bottom: 20px;
       font-size: 14px;
     }
     
-    .terms-container input {
-      margin-top: 2px;
+    .terms-check input {
       margin-right: 8px;
+      margin-top: 3px;
     }
     
-    .terms-text {
-      flex: 1;
-      line-height: 1.5;
-    }
-    
-    .terms-link {
+    .terms-check a {
       color: var(--primary-color);
       text-decoration: none;
-      font-weight: 500;
     }
     
-    .terms-link:hover {
+    .terms-check a:hover {
       text-decoration: underline;
-    }
-    
-    .name-row {
-      display: flex;
-      gap: 15px;
-    }
-    
-    .name-row .form-group {
-      flex: 1;
-    }
-
-    /* For password strength indicator */
-    .password-strength {
-      height: 5px;
-      margin-top: 8px;
-      border-radius: 3px;
-      background: var(--light-gray);
-      overflow: hidden;
-    }
-    
-    .password-strength-bar {
-      height: 100%;
-      width: 0%;
-      transition: width 0.3s, background-color 0.3s;
-    }
-
-    /* Tab content transitions */
-    .forms-container {
-      overflow: hidden;
-    }
-    
-    .auth-form {
-      opacity: 0;
-      transition: opacity 0.3s;
-      height: 0;
-      overflow: hidden;
-    }
-    
-    .auth-form.active {
-      opacity: 1;
-      height: auto;
-      overflow: visible;
     }
   </style>
 </head>
@@ -430,32 +385,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         <!-- Signup form -->
         <form action="signup.php" method="POST" class="auth-form signup-form" id="signup-form">
-          <div class="name-row">
-            <div class="form-group">
-              <label for="firstname">First name</label>
-              <input id="firstname" name="firstname" placeholder="Enter first name" required autocomplete="given-name">
-            </div>
-            
-            <div class="form-group">
-              <label for="lastname">Last name</label>
-              <input id="lastname" name="lastname" placeholder="Enter last name" required autocomplete="family-name">
-            </div>
+          <div class="form-group">
+            <label for="new-username">Username</label>
+            <input id="new-username" name="username" placeholder="Choose a username" required autocomplete="username">
           </div>
           
           <div class="form-group">
-            <label for="email">Email address</label>
-            <input id="email" name="email" type="email" placeholder="Enter email address" required autocomplete="email">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" placeholder="Enter your email" required autocomplete="email">
           </div>
           
           <div class="form-group">
-            <label for="signup-username">Username</label>
-            <input id="signup-username" name="username" placeholder="Choose a username" required autocomplete="username">
-          </div>
-          
-          <div class="form-group">
-            <label for="signup-password">Password</label>
+            <label for="new-password">Password</label>
             <div class="password-input-group">
-              <input id="signup-password" name="password" type="password" placeholder="Create a password" required autocomplete="new-password">
+              <input id="new-password" name="password" type="password" placeholder="Create a password" required autocomplete="new-password">
               <button type="button" class="toggle-password" aria-label="Show password">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="eye-icon">
                   <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
@@ -463,13 +406,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </svg>
               </button>
             </div>
-            <div class="password-strength">
-              <div class="password-strength-bar"></div>
-            </div>
           </div>
           
           <div class="form-group">
-            <label for="confirm-password">Confirm password</label>
+            <label for="confirm-password">Confirm Password</label>
             <div class="password-input-group">
               <input id="confirm-password" name="confirm_password" type="password" placeholder="Confirm your password" required autocomplete="new-password">
               <button type="button" class="toggle-password" aria-label="Show password">
@@ -481,11 +421,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
           </div>
           
-          <div class="terms-container">
+          <div class="terms-check">
             <input type="checkbox" id="terms" name="terms" required>
-            <div class="terms-text">
-              <label for="terms">I agree to the <a href="terms.php" class="terms-link">Terms of Service</a> and <a href="privacy.php" class="terms-link">Privacy Policy</a></label>
-            </div>
+            <label for="terms">I agree to the <a href="terms.php">Terms of Service</a> and <a href="privacy.php">Privacy Policy</a></label>
           </div>
           
           <button type="submit" class="auth-button">Create Account</button>
@@ -498,28 +436,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Tab switching functionality
     document.addEventListener('DOMContentLoaded', function() {
       const tabButtons = document.querySelectorAll('.tab-btn');
-      const forms = document.querySelectorAll('.auth-form');
+      const authForms = document.querySelectorAll('.auth-form');
       const authTitle = document.querySelector('.auth-title');
       
       tabButtons.forEach(button => {
         button.addEventListener('click', function() {
-          // Update active tab button
+          // Update active tab
           tabButtons.forEach(btn => btn.classList.remove('active'));
           this.classList.add('active');
           
           // Show the corresponding form
           const target = this.getAttribute('data-target');
-          forms.forEach(form => {
+          authForms.forEach(form => {
             form.classList.remove('active');
+            if (form.id === target + '-form') {
+              form.classList.add('active');
+            }
           });
-          document.getElementById(target + '-form').classList.add('active');
           
-          // Update the title
-          if (target === 'login') {
-            authTitle.textContent = 'Welcome Back';
-          } else {
-            authTitle.textContent = 'Create Your Account';
-          }
+          // Update title
+          authTitle.textContent = target === 'login' ? 'Welcome Back' : 'Create Account';
         });
       });
       
@@ -527,65 +463,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       const toggleButtons = document.querySelectorAll('.toggle-password');
       toggleButtons.forEach(button => {
         button.addEventListener('click', function() {
-          const passwordInput = this.previousElementSibling;
-          if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            this.innerHTML = `
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="eye-icon">
-                <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/>
-                <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829l.822.822zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/>
-                <path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12-.708.708z"/>
-              </svg>
-            `;
-          } else {
-            passwordInput.type = 'password';
-            this.innerHTML = `
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="eye-icon">
-                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
-                <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
-              </svg>
-            `;
-          }
-        });
-      });
-      
-      // Password strength indicator (simplified)
-      const signupPassword = document.getElementById('signup-password');
-      const strengthBar = document.querySelector('.password-strength-bar');
-      
-      signupPassword.addEventListener('input', function() {
-        const value = this.value;
-        let strength = 0;
-        
-        if (value.length >= 8) strength += 25;
-        if (/[A-Z]/.test(value)) strength += 25;
-        if (/[0-9]/.test(value)) strength += 25;
-        if (/[^A-Za-z0-9]/.test(value)) strength += 25;
-        
-        strengthBar.style.width = strength + '%';
-        
-        if (strength <= 25) {
-          strengthBar.style.backgroundColor = '#ef4444'; // Red - weak
-        } else if (strength <= 50) {
-          strengthBar.style.backgroundColor = '#f59e0b'; // Orange - medium
-        } else if (strength <= 75) {
-          strengthBar.style.backgroundColor = '#10b981'; // Green - strong
-        } else {
-          strengthBar.style.backgroundColor = '#059669'; // Dark green - very strong
-        }
-      });
-      
-      // Password confirmation check (simplified)
-      const confirmPassword = document.getElementById('confirm-password');
-      const passwordFields = [signupPassword, confirmPassword];
-      
-      passwordFields.forEach(field => {
-        field.addEventListener('input', function() {
-          if (confirmPassword.value && signupPassword.value !== confirmPassword.value) {
-            confirmPassword.setCustomValidity("Passwords don't match");
-          } else {
-            confirmPassword.setCustomValidity('');
-          }
+          const input = this.previousElementSibling;
+          const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+          input.setAttribute('type', type);
+          
+          // Update icon (optional)
+          // You could add code here to change the eye icon
         });
       });
     });
