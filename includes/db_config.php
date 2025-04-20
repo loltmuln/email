@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS users (
     address VARCHAR(255) NOT NULL,
     reset_code VARCHAR(255) DEFAULT NULL,
     reset_expiry DATETIME DEFAULT NULL,
-    reset_verified BOOLEAN DEFAULT FALSE;
+    reset_verified BOOLEAN DEFAULT FALSE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 SQL;
 
