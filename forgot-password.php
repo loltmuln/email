@@ -8,7 +8,11 @@ require_once __DIR__ . '/includes/db_config.php';
 
 // Load the .env file to access the API key securely
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-$dotenv->load();
+try {
+  $dotenv->load();
+} catch (Exception $e) {
+  die("Error loading .env file: " . $e->getMessage());
+}
 
 // Get the API key from the environment variable
 $apiKey = getenv('MAILGUN_API_KEY');
@@ -19,7 +23,11 @@ $error = '';
 
 function sendResetOTP($email, $otp) {
     // Use the API key loaded from the environment variables
-    global $apiKey;
+    $apiKey = getenv('MAILGUN_API_KEY');
+
+    if (!$apiKey) {
+        throw new Exception("Mailgun configuration is missing.");
+    }
     $domain = 'sandbox1d5b9be017ec451c9b999323ff2fe36e.mailgun.org'; // Your domain
 
     $mg = Mailgun::create($apiKey); // Initialize Mailgun
