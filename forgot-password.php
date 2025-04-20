@@ -1,75 +1,70 @@
 <?php
 session_start();
+require __DIR__ . '/vendor/autoload.php';
 include __DIR__ . '/includes/db_config.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 $success = '';
 $error = '';
 
-// Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  // Get and sanitize email
-  $email = filter_var(trim($_POST['email']), FILTER_SANITIZE_EMAIL);
-  
-  // Validate email
-  if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    $error = "Please enter a valid email address.";
-  } else {
-    // Check if email exists in database
-    $stmt = $conn->prepare("SELECT username FROM users WHERE email = ?");
-    $stmt->bind_param('s', $email);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows === 0) {
-      // Don't reveal if email exists or not (security best practice)
-      $success = "If your email is registered, you will receive reset instructions shortly.";
+    $email = filter_var(trim($_POST['email']), FILTER_SANITIZE_EMAIL);
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Please enter a valid email address.";
     } else {
-      // Generate a reset code (simple implementation)
-      $reset_code = md5(uniqid(rand(), true));
-      $expiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
-      
-      // Store reset code in database
-      $update_stmt = $conn->prepare("UPDATE users SET reset_code = ?, reset_expiry = ? WHERE email = ?");
-      $update_stmt->bind_param('sss', $reset_code, $expiry, $email);
-      
-      if ($update_stmt->execute()) {
-        // Send email with reset link
-        $reset_link = "https://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/reset-password.php?code=" . $reset_code;
-        
-        $to = $email;
-        $subject = "Password Reset Request";
-        $message = "
-        <html>
-        <head>
-          <title>Password Reset</title>
-        </head>
-        <body>
-          <p>Hello,</p>
-          <p>We received a request to reset your password. Click the link below to set a new password:</p>
-          <p><a href=\"$reset_link\">Reset Password</a></p>
-          <p>This link will expire in 1 hour.</p>
-          <p>If you didn't request this, please ignore this email.</p>
-          <p>Regards,<br>Your Website Team</p>
-        </body>
-        </html>
-        ";
-        
-        // Headers for HTML email
-        $headers = "MIME-Version: 1.0\r\n";
-        $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-        $headers .= "From: noreply@" . $_SERVER['HTTP_HOST'] . "\r\n";
-        
-        if (mail($to, $subject, $message, $headers)) {
-          $success = "Reset instructions have been sent to your email.";
+        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            $success = "If your email is registered, you will receive OTP instructions shortly.";
         } else {
-          $error = "Could not send reset email. Please try again later.";
+            $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+            $expiry = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+
+            $update_stmt = $conn->prepare("UPDATE users SET reset_code = ?, reset_expiry = ?, reset_verified = 0 WHERE email = ?");
+            $update_stmt->bind_param('sss', $otp, $expiry, $email);
+
+            if ($update_stmt->execute()) {
+                $mail = new PHPMailer(true);
+                try {
+                    $mail->isSMTP();
+                    $mail->Host = 'smtp.gmail.com'; // Change if needed
+                    $mail->SMTPAuth = true;
+                    $mail->Username = 'temuulent233@gmail.com'; // Replace with your Mailgun/Gmail credentials
+                    $mail->Password = 'xisd bqed nrje jftv';                   // Replace with app password or API key
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                    $mail->Port = 587;
+
+                    $mail->setFrom('temuulent233@gmail.com', 'lab');
+                    $mail->addAddress($email);
+                    $mail->isHTML(true);
+                    $mail->Subject = 'Your Password Reset OTP';
+                    $mail->Body = "
+                        <p>Hello,</p>
+                        <p>Your OTP to reset your password is: <strong>$otp</strong></p>
+                        <p>This code will expire in 10 minutes.</p>
+                        <p>If you didn’t request this, please ignore it.</p>
+                    ";
+
+                    $mail->send();
+                    $_SESSION['email'] = $email;
+                    header("Location: verify-otp.php");
+                    exit;
+                } catch (Exception $e) {
+                    $error = "Mailer Error: " . $mail->ErrorInfo;
+                }
+            } else {
+                $error = "Could not update reset information.";
+            }
         }
-      } else {
-        $error = "An error occurred. Please try again later.";
-      }
     }
-  }
 }
+?>
 ?>
 <!DOCTYPE html>
 <html lang="en">
