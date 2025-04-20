@@ -6,17 +6,23 @@ session_start();
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/includes/db_config.php';
 
+// Load the .env file to access the API key securely
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+
+// Get the API key from the environment variable
+$apiKey = getenv('MAILGUN_API_KEY');
 use Mailgun\Mailgun;
 
 $success = '';
 $error = '';
 
 function sendResetOTP($email, $otp) {
-    // Mailgun configuration
-    $apiKey = '12736b532f15540c7d655434fc45d091-17c877d7-772f6ca1'; // replace with your Mailgun Private API key
-    $domain = 'sandbox1d5b9be017ec451c9b999323ff2fe36e.mailgun.org';
+    // Use the API key loaded from the environment variables
+    global $apiKey;
+    $domain = 'sandbox1d5b9be017ec451c9b999323ff2fe36e.mailgun.org'; // Your domain
 
-    $mg = Mailgun::create($apiKey);
+    $mg = Mailgun::create($apiKey); // Initialize Mailgun
 
     $subject = 'Your Password Reset OTP';
     $body = "
@@ -27,6 +33,7 @@ function sendResetOTP($email, $otp) {
     ";
 
     try {
+        // Send the email
         $mg->messages()->send($domain, [
             'from'    => 'lab <gahai@sandbox1d5b9be017ec451c9b999323ff2fe36e.mailgun.org>',
             'to'      => $email,
@@ -46,12 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw new Exception("Please enter a valid email address.");
         }
-
-        if (!$conn->ping()) {
-            $conn->close();
-            require __DIR__ . '/includes/db_config.php';
-        }
-
+        
+        // Check if the email exists in the database
         $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
         if (!$stmt) {
             throw new Exception("Database error: " . $conn->error);
@@ -64,9 +67,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $success = "If your email is registered, you will receive OTP instructions shortly.";
 
         if ($result->num_rows > 0) {
+            // Generate OTP and set its expiry
             $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
             $expiry = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
+            // Update the user's reset information
             $update_stmt = $conn->prepare("UPDATE users SET reset_code = ?, reset_expiry = ?, reset_verified = 0 WHERE email = ?");
             if (!$update_stmt) {
                 throw new Exception("Database error: " . $conn->error);
@@ -78,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception("Could not update reset information: " . $update_stmt->error);
             }
 
+            // Send the OTP email
             if (sendResetOTP($email, $otp)) {
                 $_SESSION['email'] = $email;
                 header("Location: verify-otp.php");
