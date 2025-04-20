@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $mail->Host = 'smtp.gmail.com'; // Change if needed
                     $mail->SMTPAuth = true;
                     $mail->Username = 'temuulent233@gmail.com'; // Replace with your Mailgun/Gmail credentials
-                    $mail->Password = 'xisd bqed nrje jftv';                   // Replace with app password or API key
+                    $mail->Password = 'xisdbqednrjejftv';                   // Replace with app password or API key
                     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                     $mail->Port = 587;
 
