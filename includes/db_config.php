@@ -22,7 +22,7 @@ mysqli_ssl_set(
     NULL
 );
 
-// Connect
+// Connect using SSL
 mysqli_real_connect(
     $conn,
     $host,
@@ -34,26 +34,62 @@ mysqli_real_connect(
     MYSQLI_CLIENT_SSL
 );
 
+// Check connection
 if (mysqli_connect_errno()) {
     die("DB connection failed: " . mysqli_connect_error());
 }
 
-// Create the users table if it doesn't exist
-$table_sql = <<<SQL
-CREATE TABLE IF NOT EXISTS users (
-    id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    phone VARCHAR(15) NOT NULL,
-    country_code VARCHAR(5) NOT NULL,
-    address VARCHAR(255) NOT NULL,
-    reset_code VARCHAR(255) DEFAULT NULL,
-    reset_expiry DATETIME DEFAULT NULL,
-    reset_verified BOOLEAN DEFAULT FALSE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-SQL;
+// Check if the users table exists
+$table_check = $conn->query("SHOW TABLES LIKE 'users'");
 
-if (! $conn->query($table_sql)) {
-    die("Table creation failed: " . $conn->error);
+if ($table_check && $table_check->num_rows == 0) {
+    // Table does not exist, create it
+    $create_table_sql = <<<SQL
+    CREATE TABLE users (
+        id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        phone VARCHAR(15) NOT NULL,
+        country_code VARCHAR(5) NOT NULL,
+        address VARCHAR(255) NOT NULL,
+        reset_code VARCHAR(255) DEFAULT NULL,
+        reset_expiry DATETIME DEFAULT NULL,
+        reset_verified BOOLEAN DEFAULT FALSE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    SQL;
+
+    if (! $conn->query($create_table_sql)) {
+        die("Table creation failed: " . $conn->error);
+    }
+} else {
+    // Table exists, check for missing columns
+    $existing_columns = [];
+    $columns_result = $conn->query("SHOW COLUMNS FROM users");
+
+    while ($row = $columns_result->fetch_assoc()) {
+        $existing_columns[] = $row['Field'];
+    }
+
+    $alterations = [];
+
+    if (!in_array('reset_code', $existing_columns)) {
+        $alterations[] = "ADD COLUMN reset_code VARCHAR(255) DEFAULT NULL";
+    }
+
+    if (!in_array('reset_expiry', $existing_columns)) {
+        $alterations[] = "ADD COLUMN reset_expiry DATETIME DEFAULT NULL";
+    }
+
+    if (!in_array('reset_verified', $existing_columns)) {
+        $alterations[] = "ADD COLUMN reset_verified BOOLEAN DEFAULT FALSE";
+    }
+
+    if (!empty($alterations)) {
+        $alter_sql = "ALTER TABLE users " . implode(", ", $alterations) . ";";
+        if (! $conn->query($alter_sql)) {
+            die("Table alteration failed: " . $conn->error);
+        }
+    }
 }
+?>
