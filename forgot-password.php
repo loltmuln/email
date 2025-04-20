@@ -13,11 +13,13 @@ $error = '';
 
 // Function to send the reset OTP email using Mailgun API
 function sendResetOTP($email, $otp) {
-    // Fetch the API key from environment variables (configured in DigitalOcean App Platform)
+    // Fetch the API key and domain from environment variables
     $apiKey = getenv('MAILGUN_API_KEY');
     $domain = getenv('MAILGUN_DOMAIN');
+    $fromEmail = getenv('MAILGUN_FROM_EMAIL');
 
-    if (!$apiKey || !$domain) {
+    // Ensure we have the required environment variables
+    if (!$apiKey || !$domain || !$fromEmail) {
         throw new Exception("Mailgun configuration is missing.");
     }
 
@@ -32,11 +34,12 @@ function sendResetOTP($email, $otp) {
     ";
 
     try {
+        // Send the email using Mailgun
         $mg->messages()->send($domain, [
-            'from'    => 'lab <gahai@sandbox1d5b9be017ec451c9b999323ff2fe36e.mailgun.org>',
-            'to'      => $email,
-            'subject' => $subject,
-            'html'    => $body
+            'from'    => $fromEmail,  // Use the from email set in the environment variable
+            'to'      => $email,      // Send to the provided email
+            'subject' => $subject,    // Email subject
+            'html'    => $body        // Email body in HTML format
         ]);
         return true;
     } catch (Exception $e) {
@@ -49,10 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $email = filter_var(trim($_POST['email']), FILTER_SANITIZE_EMAIL);
 
+        // Validate the email format
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw new Exception("Please enter a valid email address.");
         }
 
+        // Check if the email exists in the database
         $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
         if (!$stmt) {
             throw new Exception("Database error: " . $conn->error);
@@ -66,9 +71,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $success = "If your email is registered, you will receive OTP instructions shortly.";
 
         if ($result->num_rows > 0) {
+            // Generate OTP and set its expiry
             $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
             $expiry = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
+            // Update the user's reset information
             $update_stmt = $conn->prepare("UPDATE users SET reset_code = ?, reset_expiry = ?, reset_verified = 0 WHERE email = ?");
             if (!$update_stmt) {
                 throw new Exception("Database error: " . $conn->error);
@@ -80,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception("Could not update reset information: " . $update_stmt->error);
             }
 
+            // Send the OTP email
             if (sendResetOTP($email, $otp)) {
                 $_SESSION['email'] = $email;
                 header("Location: verify-otp.php");
@@ -91,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
