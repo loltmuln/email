@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $update = $conn->prepare("UPDATE users SET reset_verified = 1 WHERE email = ?");
             $update->bind_param('s', $email);
             $update->execute();
-            header("Location: reset-password.php");
+            header("Location: forgot-password.php");
             exit;
         } else {
             $error = "Invalid or expired OTP.";
