@@ -17,14 +17,14 @@ function sendResetOTP($email, $otp) {
 
     try {
         $mail->isSMTP();
-        $mail->Host = 'smtp.gmail.com';
+        $mail->Host = 'smtp.mailgun.org';
         $mail->SMTPAuth = true;
-        $mail->Username = 'temuulent233@gmail.com';
-        $mail->Password = 'xisdbqednrjejftv'; 
+        $mail->Username = 'postmaster@sandbox1d5b9be017ec451c9b999323ff2fe36e.mailgun.org';
+        $mail->Password = '#94785469Acas'; 
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = 587;
+        $mail->Port = 2525;
 
-        $mail->setFrom('temuulent233@gmail.com', 'lab');
+        $mail->setFrom('gahai@sandbox1d5b9be017ec451c9b999323ff2fe36e.mailgun.org', 'lab');
         $mail->addAddress($email);
         $mail->isHTML(true);
         $mail->Subject = 'Your Password Reset OTP';
