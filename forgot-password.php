@@ -4,11 +4,15 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 session_start();
-require __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/vendor/phpmailer/phpmailer/src/Exception.php';
+require_once __DIR__ . '/vendor/phpmailer/phpmailer/src/PHPMailer.php';
+require_once __DIR__ . '/vendor/phpmailer/phpmailer/src/SMTP.php';
+
 include __DIR__ . '/includes/db_config.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\SMTP;
 
 $success = '';
 $error = '';
@@ -56,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $mail = new PHPMailer(true);
                     try {
                         // Debug mode
-                        $mail->SMTPDebug = 0; // Set to 2 for detailed debug output
+                        $mail->SMTPDebug = 2; // Set to 2 for detailed debug output
                         
                         $mail->isSMTP();
                         $mail->Host = 'smtp.gmail.com';
