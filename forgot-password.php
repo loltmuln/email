@@ -15,12 +15,11 @@ $error = '';
 function sendResetOTP($email, $otp) {
     // Fetch the API key from environment variables (configured in DigitalOcean App Platform)
     $apiKey = getenv('MAILGUN_API_KEY');
+    $domain = getenv('MAILGUN_DOMAIN');
 
-    if (!$apiKey) {
+    if (!$apiKey || !$domain) {
         throw new Exception("Mailgun configuration is missing.");
     }
-
-    $domain = 'sandbox1d5b9be017ec451c9b999323ff2fe36e.mailgun.org';
 
     $mg = Mailgun::create($apiKey);
 
