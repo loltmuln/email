@@ -3,9 +3,10 @@ session_start();
 require __DIR__ . '/vendor/autoload.php';
 include __DIR__ . '/includes/db_config.php';
 
-use vendor\PHPMailer\PHPMailer\PHPMailer;
-use vendor\PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
+require 'vendor/autoload.php';
 $success = '';
 $error = '';
 
