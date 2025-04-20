@@ -6,39 +6,36 @@ session_start();
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/includes/db_config.php';
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+use Mailgun\Mailgun;
 
 $success = '';
 $error = '';
 
 function sendResetOTP($email, $otp) {
-    $mail = new PHPMailer(true);
+    // Mailgun configuration
+    $apiKey = '12736b532f15540c7d655434fc45d091-17c877d7-772f6ca1'; // replace with your Mailgun Private API key
+    $domain = 'sandbox1d5b9be017ec451c9b999323ff2fe36e.mailgun.org';
+
+    $mg = Mailgun::create($apiKey);
+
+    $subject = 'Your Password Reset OTP';
+    $body = "
+        <p>Hello,</p>
+        <p>Your OTP to reset your password is: <strong>$otp</strong></p>
+        <p>This code will expire in 10 minutes.</p>
+        <p>If you didn't request this, please ignore it.</p>
+    ";
 
     try {
-        $mail->isSMTP();
-        $mail->Host = 'smtp.mailgun.org';
-        $mail->SMTPAuth = true;
-        $mail->Username = 'postmaster@sandbox1d5b9be017ec451c9b999323ff2fe36e.mailgun.org';
-        $mail->Password = '#94785469Acas'; 
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = 2525;
-
-        $mail->setFrom('gahai@sandbox1d5b9be017ec451c9b999323ff2fe36e.mailgun.org', 'lab');
-        $mail->addAddress($email);
-        $mail->isHTML(true);
-        $mail->Subject = 'Your Password Reset OTP';
-        $mail->Body = "
-            <p>Hello,</p>
-            <p>Your OTP to reset your password is: <strong>$otp</strong></p>
-            <p>This code will expire in 10 minutes.</p>
-            <p>If you didn't request this, please ignore it.</p>
-        ";
-
-        $mail->send();
+        $mg->messages()->send($domain, [
+            'from'    => 'lab <gahai@sandbox1d5b9be017ec451c9b999323ff2fe36e.mailgun.org>',
+            'to'      => $email,
+            'subject' => $subject,
+            'html'    => $body
+        ]);
         return true;
     } catch (Exception $e) {
-        throw new Exception("Mailer Error: " . $mail->ErrorInfo);
+        throw new Exception("Mailgun API Error: " . $e->getMessage());
     }
 }
 
