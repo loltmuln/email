@@ -1,4 +1,8 @@
 <?php
+// Add these lines at the very top of your file
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 session_start();
 require __DIR__ . '/vendor/autoload.php';
 include __DIR__ . '/includes/db_config.php';
@@ -6,66 +10,89 @@ include __DIR__ . '/includes/db_config.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require 'vendor/autoload.php';
 $success = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = filter_var(trim($_POST['email']), FILTER_SANITIZE_EMAIL);
+    try {
+        $email = filter_var(trim($_POST['email']), FILTER_SANITIZE_EMAIL);
 
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = "Please enter a valid email address.";
-    } else {
-        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
-        $stmt->bind_param('s', $email);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        if ($result->num_rows === 0) {
-            $success = "If your email is registered, you will receive OTP instructions shortly.";
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = "Please enter a valid email address.";
         } else {
-            $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
-            $expiry = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+            // Check if the connection is still alive
+            if (!$conn->ping()) {
+                // Try to reconnect
+                $conn->close();
+                include __DIR__ . '/includes/db_config.php';
+            }
+            
+            $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+            if (!$stmt) {
+                throw new Exception("Database prepare error: " . $conn->error);
+            }
+            
+            $stmt->bind_param('s', $email);
+            if (!$stmt->execute()) {
+                throw new Exception("Database execute error: " . $stmt->error);
+            }
+            
+            $result = $stmt->get_result();
 
-            $update_stmt = $conn->prepare("UPDATE users SET reset_code = ?, reset_expiry = ?, reset_verified = 0 WHERE email = ?");
-            $update_stmt->bind_param('sss', $otp, $expiry, $email);
-
-            if ($update_stmt->execute()) {
-                $mail = new PHPMailer(true);
-                try {
-                    $mail->isSMTP();
-                    $mail->Host = 'smtp.gmail.com'; // Change if needed
-                    $mail->SMTPAuth = true;
-                    $mail->Username = 'temuulent233@gmail.com'; // Replace with your Mailgun/Gmail credentials
-                    $mail->Password = 'xisdbqednrjejftv';                   // Replace with app password or API key
-                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                    $mail->Port = 587;
-
-                    $mail->setFrom('temuulent233@gmail.com', 'lab');
-                    $mail->addAddress($email);
-                    $mail->isHTML(true);
-                    $mail->Subject = 'Your Password Reset OTP';
-                    $mail->Body = "
-                        <p>Hello,</p>
-                        <p>Your OTP to reset your password is: <strong>$otp</strong></p>
-                        <p>This code will expire in 10 minutes.</p>
-                        <p>If you didn’t request this, please ignore it.</p>
-                    ";
-
-                    $mail->send();
-                    $_SESSION['email'] = $email;
-                    header("Location: verify-otp.php");
-                    exit;
-                } catch (Exception $e) {
-                    $error = "Mailer Error: " . $mail->ErrorInfo;
-                }
+            if ($result->num_rows === 0) {
+                $success = "If your email is registered, you will receive OTP instructions shortly.";
             } else {
-                $error = "Could not update reset information.";
+                $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+                $expiry = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+
+                $update_stmt = $conn->prepare("UPDATE users SET reset_code = ?, reset_expiry = ?, reset_verified = 0 WHERE email = ?");
+                if (!$update_stmt) {
+                    throw new Exception("Database prepare error: " . $conn->error);
+                }
+                
+                $update_stmt->bind_param('sss', $otp, $expiry, $email);
+
+                if ($update_stmt->execute()) {
+                    $mail = new PHPMailer(true);
+                    try {
+                        // Debug mode
+                        $mail->SMTPDebug = 0; // Set to 2 for detailed debug output
+                        
+                        $mail->isSMTP();
+                        $mail->Host = 'smtp.gmail.com';
+                        $mail->SMTPAuth = true;
+                        $mail->Username = 'temuulent233@gmail.com';
+                        $mail->Password = 'xisdbqednrjejftv'; 
+                        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                        $mail->Port = 587;
+
+                        $mail->setFrom('temuulent233@gmail.com', 'lab');
+                        $mail->addAddress($email);
+                        $mail->isHTML(true);
+                        $mail->Subject = 'Your Password Reset OTP';
+                        $mail->Body = "
+                            <p>Hello,</p>
+                            <p>Your OTP to reset your password is: <strong>$otp</strong></p>
+                            <p>This code will expire in 10 minutes.</p>
+                            <p>If you didn't request this, please ignore it.</p>
+                        ";
+
+                        $mail->send();
+                        $_SESSION['email'] = $email;
+                        header("Location: verify-otp.php");
+                        exit;
+                    } catch (Exception $e) {
+                        throw new Exception("Mailer Error: " . $mail->ErrorInfo);
+                    }
+                } else {
+                    throw new Exception("Could not update reset information: " . $update_stmt->error);
+                }
             }
         }
+    } catch (Exception $e) {
+        $error = "An error occurred: " . $e->getMessage();
     }
 }
-?>
 ?>
 <!DOCTYPE html>
 <html lang="en">
